@@ -1,0 +1,15 @@
+[package]
+
+name = "typemap"
+version = "0.0.0"
+authors = ["Jonathan Reem <jonathan.reem@gmail.com>"]
+
+[lib]
+
+name = "typemap"
+path = "src/lib.rs"
+
+[dependencies.phantom]
+
+git = "https://github.com/reem/rust-phantom.git"
+
