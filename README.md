@@ -10,3 +10,21 @@ Key-value associations are defined through the `Assoc` trait, which uses a
 phantom type parameter and trait coherence rules to enforce the invariants
 of `TypeMap`.
 
+## Example
+
+```rust
+#[deriving(Show, PartialEq)]
+struct Key;
+
+#[deriving(Show, PartialEq)]
+struct Value;
+
+impl Assoc<Value> for Key {}
+
+#[test] fn test_pairing() {
+    let mut map = TypeMap::new();
+    map.insert::<Value, Key>(Value);
+    assert_eq!(*map.find::<Value, Key>().unwrap(), Value);
+}
+```
+
