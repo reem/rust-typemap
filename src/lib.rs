@@ -30,18 +30,23 @@ impl TypeMap {
     }
 
     /// Insert a value into the map with a specified key type.
-    pub fn insert<V: 'static, K: Assoc<V> + 'static>(&mut self, val: V) -> bool {
+    pub fn insert<K: Assoc<V> + 'static, V: 'static>(&mut self, val: V) -> bool {
         self.data.insert(TypeId::of::<K>(), box val as Box<Any>)
     }
 
     /// Find a value in the map and get a reference to it.
-    pub fn find<V: 'static, K: Assoc<V> + 'static>(&self) -> Option<&V> {
+    pub fn find<K: Assoc<V> + 'static, V: 'static>(&self) -> Option<&V> {
         self.data.find(&TypeId::of::<K>()).and_then(|v| v.downcast_ref::<V>())
     }
 
     /// Find a value in the map and get a mutable reference to it.
-    pub fn find_mut<V: 'static, K: Assoc<V> + 'static>(&mut self) -> Option<&mut V> {
+    pub fn find_mut<K: Assoc<V> + 'static, V: 'static>(&mut self) -> Option<&mut V> {
         self.data.find_mut(&TypeId::of::<K>()).and_then(|v| v.downcast_mut::<V>())
+    }
+
+    /// Check if a key has an associated value stored in the map.
+    pub fn contains<K: Assoc<V> + 'static, V: 'static>(&self) -> bool {
+        self.data.contains_key(&TypeId::of::<K>())
     }
 }
 
@@ -59,8 +64,9 @@ mod test {
 
     #[test] fn test_pairing() {
         let mut map = TypeMap::new();
-        map.insert::<Value, Key>(Value);
-        assert_eq!(*map.find::<Value, Key>().unwrap(), Value);
+        map.insert::<Key, Value>(Value);
+        assert_eq!(*map.find::<Key, Value>().unwrap(), Value);
+        assert!(map.contains::<Key, Value>());
     }
 }
 
