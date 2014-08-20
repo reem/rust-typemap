@@ -16,7 +16,7 @@ pub struct TypeMap {
     data: HashMap<TypeId, Box<Any>>
 }
 
-/// This trait defines the relationship between keys and values in TypeMap.
+/// This trait defines the relationship between keys and values in a TypeMap.
 ///
 /// It is implemented for Keys, with a phantom type parameter for values.
 pub trait Assoc<Value> {}
@@ -48,6 +48,13 @@ impl TypeMap {
     pub fn contains<K: Assoc<V> + 'static, V: 'static>(&self) -> bool {
         self.data.contains_key(&TypeId::of::<K>())
     }
+
+    /// Remove a value from the map.
+    ///
+    /// Returns `true` if a value was removed.
+    pub fn remove<K: Assoc<V> + 'static, V: 'static>(&mut self) -> bool {
+        self.data.remove(&TypeId::of::<K>())
+    }
 }
 
 #[cfg(test)]
@@ -67,6 +74,14 @@ mod test {
         map.insert::<Key, Value>(Value);
         assert_eq!(*map.find::<Key, Value>().unwrap(), Value);
         assert!(map.contains::<Key, Value>());
+    }
+
+    #[test] fn test_remove() {
+        let mut map = TypeMap::new();
+        map.insert::<Key, Value>(Value);
+        assert!(map.contains::<Key, Value>());
+        map.remove::<Key, Value>();
+        assert!(!map.contains::<Key, Value>());
     }
 }
 
