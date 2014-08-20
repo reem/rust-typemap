@@ -57,6 +57,18 @@ impl TypeMap {
     }
 }
 
+impl Collection for TypeMap {
+    fn len(&self) -> uint {
+        self.data.len()
+    }
+}
+
+impl Mutable for TypeMap {
+    fn clear(&mut self) {
+        self.data.clear()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::{TypeMap, Assoc};
