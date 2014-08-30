@@ -13,7 +13,7 @@ use std::collections::HashMap;
 /// Can contain one value of any type for each key type, as defined
 /// by the Assoc trait.
 pub struct TypeMap {
-    data: HashMap<TypeId, Box<Any>>
+    data: HashMap<TypeId, Box<Any + 'static>>
 }
 
 /// This trait defines the relationship between keys and values in a TypeMap.
