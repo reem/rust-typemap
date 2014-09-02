@@ -13,3 +13,7 @@ path = "src/lib.rs"
 
 git = "https://github.com/reem/rust-phantom.git"
 
+[dependencies.unsafe-any]
+
+git = "https://github.com/reem/rust-unsafe-any.git"
+

@@ -4,9 +4,14 @@
 
 //! A type-based key value store where one value type is allowed for each key.
 
-use std::any::{Any, AnyRefExt, AnyMutRefExt};
+extern crate uany = "unsafe-any";
+
+use std::any::Any;
 use std::intrinsics::TypeId;
 use std::collections::HashMap;
+
+// These traits are faster when we know the type is correct already.
+use uany::{UncheckedAnyDowncast, UncheckedAnyMutDowncast};
 
 /// A map keyed by types.
 ///
@@ -36,12 +41,16 @@ impl TypeMap {
 
     /// Find a value in the map and get a reference to it.
     pub fn find<K: Assoc<V> + 'static, V: 'static>(&self) -> Option<&V> {
-        self.data.find(&TypeId::of::<K>()).and_then(|v| v.downcast_ref::<V>())
+        self.data.find(&TypeId::of::<K>()).map(|v| unsafe {
+            v.downcast_ref_unchecked::<V>()
+        })
     }
 
     /// Find a value in the map and get a mutable reference to it.
     pub fn find_mut<K: Assoc<V> + 'static, V: 'static>(&mut self) -> Option<&mut V> {
-        self.data.find_mut(&TypeId::of::<K>()).and_then(|v| v.downcast_mut::<V>())
+        self.data.find_mut(&TypeId::of::<K>()).map(|v| unsafe {
+            v.downcast_mut_unchecked::<V>()
+        })
     }
 
     /// Check if a key has an associated value stored in the map.
