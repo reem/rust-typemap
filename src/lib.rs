@@ -4,7 +4,7 @@
 
 //! A type-based key value store where one value type is allowed for each key.
 
-extern crate uany = "unsafe-any";
+extern crate "unsafe-any" as uany;
 
 use std::any::Any;
 use std::intrinsics::TypeId;
