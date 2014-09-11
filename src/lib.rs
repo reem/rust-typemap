@@ -24,7 +24,7 @@ pub struct TypeMap {
 /// This trait defines the relationship between keys and values in a TypeMap.
 ///
 /// It is implemented for Keys, with a phantom type parameter for values.
-pub trait Assoc<Value> {}
+pub trait Assoc<Value: 'static>: 'static {}
 
 impl TypeMap {
     /// Create a new, empty TypeMap.
@@ -35,33 +35,33 @@ impl TypeMap {
     }
 
     /// Insert a value into the map with a specified key type.
-    pub fn insert<K: Assoc<V> + 'static, V: 'static>(&mut self, val: V) -> bool {
+    pub fn insert<K: Assoc<V>, V: 'static>(&mut self, val: V) -> bool {
         self.data.insert(TypeId::of::<K>(), box val as Box<Any>)
     }
 
     /// Find a value in the map and get a reference to it.
-    pub fn find<K: Assoc<V> + 'static, V: 'static>(&self) -> Option<&V> {
+    pub fn find<K: Assoc<V>, V: 'static>(&self) -> Option<&V> {
         self.data.find(&TypeId::of::<K>()).map(|v| unsafe {
             v.downcast_ref_unchecked::<V>()
         })
     }
 
     /// Find a value in the map and get a mutable reference to it.
-    pub fn find_mut<K: Assoc<V> + 'static, V: 'static>(&mut self) -> Option<&mut V> {
+    pub fn find_mut<K: Assoc<V>, V: 'static>(&mut self) -> Option<&mut V> {
         self.data.find_mut(&TypeId::of::<K>()).map(|v| unsafe {
             v.downcast_mut_unchecked::<V>()
         })
     }
 
     /// Check if a key has an associated value stored in the map.
-    pub fn contains<K: Assoc<V> + 'static, V: 'static>(&self) -> bool {
+    pub fn contains<K: Assoc<V>, V: 'static>(&self) -> bool {
         self.data.contains_key(&TypeId::of::<K>())
     }
 
     /// Remove a value from the map.
     ///
     /// Returns `true` if a value was removed.
-    pub fn remove<K: Assoc<V> + 'static, V: 'static>(&mut self) -> bool {
+    pub fn remove<K: Assoc<V>, V: 'static>(&mut self) -> bool {
         self.data.remove(&TypeId::of::<K>())
     }
 }
