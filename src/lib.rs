@@ -64,6 +64,12 @@ impl TypeMap {
     pub fn remove<K: Assoc<V>, V: 'static>(&mut self) -> bool {
         self.data.remove(&TypeId::of::<K>())
     }
+
+    /// Read the underlying HashMap
+    pub unsafe fn data(&self) -> &HashMap<TypeId, Box<Any + 'static>> { &self.data }
+
+    /// Get a mutable reference to the underlying HashMap
+    pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<Any + 'static>> { &mut self.data }
 }
 
 impl Collection for TypeMap {
