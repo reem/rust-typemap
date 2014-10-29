@@ -4,14 +4,15 @@
 
 //! A type-based key value store where one value type is allowed for each key.
 
+extern crate alloc;
 extern crate "unsafe-any" as uany;
 
 use std::any::Any;
 use std::intrinsics::TypeId;
-use std::collections::HashMap;
+use std::collections::{hashmap, HashMap};
 
 // These traits are faster when we know the type is correct already.
-use uany::{UncheckedAnyDowncast, UncheckedAnyMutDowncast};
+use uany::{UncheckedAnyDowncast, UncheckedAnyMutDowncast, UncheckedBoxAnyDowncast};
 
 /// A map keyed by types.
 ///
@@ -65,11 +66,83 @@ impl TypeMap {
         self.data.remove(&TypeId::of::<K>())
     }
 
+    /// Gets the given key's corresponding entry in the map for in-place manipulation.
+    pub fn entry<'a, K: Assoc<V>, V: 'static>(&'a mut self) -> Entry<'a, K, V> {
+        match self.data.entry(TypeId::of::<K>()) {
+            hashmap::Occupied(e) => Occupied(OccupiedEntry { data: e }),
+            hashmap::Vacant(e) => Vacant(VacantEntry { data: e })
+        }
+    }
+
     /// Read the underlying HashMap
     pub unsafe fn data(&self) -> &HashMap<TypeId, Box<Any + 'static>> { &self.data }
 
     /// Get a mutable reference to the underlying HashMap
     pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<Any + 'static>> { &mut self.data }
+}
+
+/// A view onto an entry in the map.
+pub enum Entry<'a, K, V> {
+    /// A view onto an occupied entry in the map.
+    Occupied(OccupiedEntry<'a, K, V>),
+    /// A view onto an unoccupied entry in the map.
+    Vacant(VacantEntry<'a, K, V>)
+}
+
+/// A view onto an occupied entry in the map.
+pub struct OccupiedEntry<'a, K, V> {
+    data: hashmap::OccupiedEntry<'a, TypeId, Box<Any + 'static>>
+}
+
+/// A view onto an unoccupied entry in the map.
+pub struct VacantEntry<'a, K, V> {
+    data: hashmap::VacantEntry<'a, TypeId, Box<Any + 'static>>
+}
+
+impl<'a, K, V: 'static> OccupiedEntry<'a, K, V> {
+    /// Get a reference to the entry's value.
+    pub fn get(&self) -> &V {
+        unsafe {
+            self.data.get().downcast_ref_unchecked::<V>()
+        }
+    }
+
+    /// Get a mutable reference to the entry's value.
+    pub fn get_mut(&mut self) -> &mut V {
+        unsafe {
+            self.data.get_mut().downcast_mut_unchecked::<V>()
+        }
+    }
+
+    /// Transform the entry into a mutable reference with the same lifetime as the map.
+    pub fn into_mut(self) -> &'a mut V {
+        unsafe {
+            self.data.into_mut().downcast_mut_unchecked::<V>()
+        }
+    }
+
+    /// Set the entry's value and return the previous value.
+    pub fn set(&mut self, value: V) -> V {
+        unsafe {
+            *self.data.set(box value as Box<Any + 'static>).downcast_unchecked::<V>()
+        }
+    }
+
+    /// Move the entry's value out of the map, consuming the entry.
+    pub fn take(self) -> V {
+        unsafe {
+            *self.data.take().downcast_unchecked::<V>()
+        }
+    }
+}
+
+impl<'a, K, V: 'static> VacantEntry<'a, K, V> {
+    /// Set the entry's value and return a mutable reference to it.
+    pub fn set(self, value: V) -> &'a mut V {
+        unsafe {
+            self.data.set(box value as Box<Any + 'static>).downcast_mut_unchecked::<V>()
+        }
+    }
 }
 
 impl Collection for TypeMap {
@@ -86,7 +159,7 @@ impl Mutable for TypeMap {
 
 #[cfg(test)]
 mod test {
-    use super::{TypeMap, Assoc};
+    use super::{TypeMap, Assoc, Occupied, Vacant};
 
     #[deriving(Show, PartialEq)]
     struct Key;
@@ -109,6 +182,26 @@ mod test {
         assert!(map.contains::<Key, Value>());
         map.remove::<Key, Value>();
         assert!(!map.contains::<Key, Value>());
+    }
+
+    #[test] fn test_entry() {
+        let mut map = TypeMap::new();
+        map.insert::<Key, Value>(Value);
+        match map.entry::<Key, Value>() {
+            Occupied(e) => {
+                assert_eq!(e.get(), &Value);
+                assert_eq!(e.take(), Value);
+            },
+            _ => fail!("Unable to locate inserted item.")
+        }
+        assert!(!map.contains::<Key, Value>());
+        match map.entry::<Key, Value>() {
+            Vacant(e) => {
+                e.set(Value);
+            },
+            _ => fail!("Found non-existant entry.")
+        }
+        assert!(map.contains::<Key, Value>());
     }
 }
 
