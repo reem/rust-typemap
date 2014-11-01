@@ -1,5 +1,5 @@
 #![license = "MIT"]
-#![deny(missing_doc)]
+#![deny(missing_docs)]
 #![deny(warnings)]
 
 //! A type-based key value store where one value type is allowed for each key.
@@ -66,7 +66,7 @@ impl TypeMap {
         self.data.remove(&TypeId::of::<K>())
     }
 
-    /// Gets the given key's corresponding entry in the map for in-place manipulation.
+    /// Get the given key's corresponding entry in the map for in-place manipulation.
     pub fn entry<'a, K: Assoc<V>, V: 'static>(&'a mut self) -> Entry<'a, K, V> {
         match self.data.entry(TypeId::of::<K>()) {
             hashmap::Occupied(e) => Occupied(OccupiedEntry { data: e }),
@@ -79,22 +79,37 @@ impl TypeMap {
 
     /// Get a mutable reference to the underlying HashMap
     pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<Any + 'static>> { &mut self.data }
+
+    /// Get the number of values stored in the map.
+    pub fn len(&self) -> uint {
+        self.data.len()
+    }
+
+    /// Return true if the map contains no values.
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    /// Remove all entries from the map.
+    pub fn clear(&mut self) {
+        self.data.clear()
+    }
 }
 
-/// A view onto an entry in the map.
+/// A view onto an entry in a TypeMap.
 pub enum Entry<'a, K, V> {
-    /// A view onto an occupied entry in the map.
+    /// A view onto an occupied entry in a TypeMap.
     Occupied(OccupiedEntry<'a, K, V>),
-    /// A view onto an unoccupied entry in the map.
+    /// A view onto an unoccupied entry in a TypeMap.
     Vacant(VacantEntry<'a, K, V>)
 }
 
-/// A view onto an occupied entry in the map.
+/// A view onto an occupied entry in a TypeMap.
 pub struct OccupiedEntry<'a, K, V> {
     data: hashmap::OccupiedEntry<'a, TypeId, Box<Any + 'static>>
 }
 
-/// A view onto an unoccupied entry in the map.
+/// A view onto an unoccupied entry in a TypeMap.
 pub struct VacantEntry<'a, K, V> {
     data: hashmap::VacantEntry<'a, TypeId, Box<Any + 'static>>
 }
@@ -142,18 +157,6 @@ impl<'a, K, V: 'static> VacantEntry<'a, K, V> {
         unsafe {
             self.data.set(box value as Box<Any + 'static>).downcast_mut_unchecked::<V>()
         }
-    }
-}
-
-impl Collection for TypeMap {
-    fn len(&self) -> uint {
-        self.data.len()
-    }
-}
-
-impl Mutable for TypeMap {
-    fn clear(&mut self) {
-        self.data.clear()
     }
 }
 
