@@ -192,14 +192,14 @@ mod test {
                 assert_eq!(e.get(), &Value);
                 assert_eq!(e.take(), Value);
             },
-            _ => fail!("Unable to locate inserted item.")
+            _ => panic!("Unable to locate inserted item.")
         }
         assert!(!map.contains::<Key, Value>());
         match map.entry::<Key, Value>() {
             Vacant(e) => {
                 e.set(Value);
             },
-            _ => fail!("Found non-existant entry.")
+            _ => panic!("Found non-existant entry.")
         }
         assert!(map.contains::<Key, Value>());
     }
