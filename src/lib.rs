@@ -9,7 +9,7 @@ extern crate "unsafe-any" as uany;
 
 use std::any::Any;
 use std::intrinsics::TypeId;
-use std::collections::{hashmap, HashMap};
+use std::collections::{hash_map, HashMap};
 
 // These traits are faster when we know the type is correct already.
 use uany::{UncheckedAnyDowncast, UncheckedAnyMutDowncast, UncheckedBoxAnyDowncast};
@@ -69,8 +69,8 @@ impl TypeMap {
     /// Get the given key's corresponding entry in the map for in-place manipulation.
     pub fn entry<'a, K: Assoc<V>, V: 'static>(&'a mut self) -> Entry<'a, K, V> {
         match self.data.entry(TypeId::of::<K>()) {
-            hashmap::Occupied(e) => Occupied(OccupiedEntry { data: e }),
-            hashmap::Vacant(e) => Vacant(VacantEntry { data: e })
+            hash_map::Occupied(e) => Occupied(OccupiedEntry { data: e }),
+            hash_map::Vacant(e) => Vacant(VacantEntry { data: e })
         }
     }
 
@@ -106,12 +106,12 @@ pub enum Entry<'a, K, V> {
 
 /// A view onto an occupied entry in a TypeMap.
 pub struct OccupiedEntry<'a, K, V> {
-    data: hashmap::OccupiedEntry<'a, TypeId, Box<Any + 'static>>
+    data: hash_map::OccupiedEntry<'a, TypeId, Box<Any + 'static>>
 }
 
 /// A view onto an unoccupied entry in a TypeMap.
 pub struct VacantEntry<'a, K, V> {
-    data: hashmap::VacantEntry<'a, TypeId, Box<Any + 'static>>
+    data: hash_map::VacantEntry<'a, TypeId, Box<Any + 'static>>
 }
 
 impl<'a, K, V: 'static> OccupiedEntry<'a, K, V> {
