@@ -36,20 +36,38 @@ impl TypeMap {
     }
 
     /// Insert a value into the map with a specified key type.
-    pub fn insert<K: Assoc<V>, V: 'static>(&mut self, val: V) -> bool {
-        self.data.insert(TypeId::of::<K>(), box val as Box<Any>)
+    pub fn insert<K: Assoc<V>, V: 'static>(&mut self, val: V) -> Option<V> {
+        self.data.insert(TypeId::of::<K>(), box val as Box<Any>).map(|v| unsafe {
+            *v.downcast_unchecked::<V>()
+        })
     }
 
     /// Find a value in the map and get a reference to it.
+    #[deprecated = "renamed to `get`"]
     pub fn find<K: Assoc<V>, V: 'static>(&self) -> Option<&V> {
-        self.data.find(&TypeId::of::<K>()).map(|v| unsafe {
+        self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
             v.downcast_ref_unchecked::<V>()
         })
     }
 
     /// Find a value in the map and get a mutable reference to it.
+    #[deprecated = "renamed to `get_mut`"]
     pub fn find_mut<K: Assoc<V>, V: 'static>(&mut self) -> Option<&mut V> {
-        self.data.find_mut(&TypeId::of::<K>()).map(|v| unsafe {
+        self.data.get_mut(&TypeId::of::<K>()).map(|v| unsafe {
+            v.downcast_mut_unchecked::<V>()
+        })
+    }
+
+    /// Find a value in the map and get a reference to it.
+    pub fn get<K: Assoc<V>, V: 'static>(&self) -> Option<&V> {
+        self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
+            v.downcast_ref_unchecked::<V>()
+        })
+    }
+
+    /// Find a value in the map and get a mutable reference to it.
+    pub fn get_mut<K: Assoc<V>, V: 'static>(&mut self) -> Option<&mut V> {
+        self.data.get_mut(&TypeId::of::<K>()).map(|v| unsafe {
             v.downcast_mut_unchecked::<V>()
         })
     }
@@ -62,8 +80,10 @@ impl TypeMap {
     /// Remove a value from the map.
     ///
     /// Returns `true` if a value was removed.
-    pub fn remove<K: Assoc<V>, V: 'static>(&mut self) -> bool {
-        self.data.remove(&TypeId::of::<K>())
+    pub fn remove<K: Assoc<V>, V: 'static>(&mut self) -> Option<V> {
+        self.data.remove(&TypeId::of::<K>()).map(|v| unsafe {
+            *v.downcast_unchecked::<V>()
+        })
     }
 
     /// Get the given key's corresponding entry in the map for in-place manipulation.
@@ -175,7 +195,7 @@ mod test {
     #[test] fn test_pairing() {
         let mut map = TypeMap::new();
         map.insert::<Key, Value>(Value);
-        assert_eq!(*map.find::<Key, Value>().unwrap(), Value);
+        assert_eq!(*map.get::<Key, Value>().unwrap(), Value);
         assert!(map.contains::<Key, Value>());
     }
 
