@@ -14,6 +14,8 @@ use std::collections::{hash_map, HashMap};
 // These traits are faster when we know the type is correct already.
 use uany::{UncheckedAnyDowncast, UncheckedAnyMutDowncast, UncheckedBoxAnyDowncast};
 
+use Entry::{Occupied, Vacant};
+
 /// A map keyed by types.
 ///
 /// Can contain one value of any type for each key type, as defined
@@ -182,7 +184,8 @@ impl<'a, K, V: 'static> VacantEntry<'a, K, V> {
 
 #[cfg(test)]
 mod test {
-    use super::{TypeMap, Assoc, Occupied, Vacant};
+    use super::{TypeMap, Assoc};
+    use super::Entry::{Occupied, Vacant};
 
     #[deriving(Show, PartialEq)]
     struct Key;
