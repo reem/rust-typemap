@@ -20,6 +20,7 @@ use Entry::{Occupied, Vacant};
 ///
 /// Can contain one value of any type for each key type, as defined
 /// by the Assoc trait.
+#[deriving(Default)]
 pub struct TypeMap {
     data: HashMap<TypeId, Box<Any + 'static>>
 }
