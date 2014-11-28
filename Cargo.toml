@@ -1,19 +1,13 @@
 [package]
 
 name = "typemap"
-version = "0.0.0"
+version = "0.0.4"
 authors = ["Jonathan Reem <jonathan.reem@gmail.com>"]
+license = "MIT"
+description = "A typesafe store for many value types."
+repository = "https://github.com/reem/rust-typemap"
 
-[lib]
-
-name = "typemap"
-path = "src/lib.rs"
-
-[dependencies.phantom]
-
-git = "https://github.com/reem/rust-phantom.git"
-
-[dependencies.unsafe-any]
-
-git = "https://github.com/reem/rust-unsafe-any.git"
+[dependencies]
+phantom = "*"
+unsafe-any = "*"
 

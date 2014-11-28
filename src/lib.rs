@@ -1,4 +1,3 @@
-#![license = "MIT"]
 #![deny(missing_docs)]
 #![deny(warnings)]
 
