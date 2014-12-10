@@ -39,7 +39,7 @@ impl TypeMap {
 
     /// Insert a value into the map with a specified key type.
     pub fn insert<K: Assoc<V>, V: 'static>(&mut self, val: V) -> Option<V> {
-        self.data.insert(TypeId::of::<K>(), box val as Box<Any>).map(|v| unsafe {
+        self.data.insert(TypeId::of::<(K, V)>(), box val as Box<Any>).map(|v| unsafe {
             *v.downcast_unchecked::<V>()
         })
     }
@@ -47,7 +47,7 @@ impl TypeMap {
     /// Find a value in the map and get a reference to it.
     #[deprecated = "renamed to `get`"]
     pub fn find<K: Assoc<V>, V: 'static>(&self) -> Option<&V> {
-        self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
+        self.data.get(&TypeId::of::<(K, V)>()).map(|v| unsafe {
             v.downcast_ref_unchecked::<V>()
         })
     }
@@ -55,42 +55,42 @@ impl TypeMap {
     /// Find a value in the map and get a mutable reference to it.
     #[deprecated = "renamed to `get_mut`"]
     pub fn find_mut<K: Assoc<V>, V: 'static>(&mut self) -> Option<&mut V> {
-        self.data.get_mut(&TypeId::of::<K>()).map(|v| unsafe {
+        self.data.get_mut(&TypeId::of::<(K, V)>()).map(|v| unsafe {
             v.downcast_mut_unchecked::<V>()
         })
     }
 
     /// Find a value in the map and get a reference to it.
     pub fn get<K: Assoc<V>, V: 'static>(&self) -> Option<&V> {
-        self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
+        self.data.get(&TypeId::of::<(K, V)>()).map(|v| unsafe {
             v.downcast_ref_unchecked::<V>()
         })
     }
 
     /// Find a value in the map and get a mutable reference to it.
     pub fn get_mut<K: Assoc<V>, V: 'static>(&mut self) -> Option<&mut V> {
-        self.data.get_mut(&TypeId::of::<K>()).map(|v| unsafe {
+        self.data.get_mut(&TypeId::of::<(K, V)>()).map(|v| unsafe {
             v.downcast_mut_unchecked::<V>()
         })
     }
 
     /// Check if a key has an associated value stored in the map.
     pub fn contains<K: Assoc<V>, V: 'static>(&self) -> bool {
-        self.data.contains_key(&TypeId::of::<K>())
+        self.data.contains_key(&TypeId::of::<(K, V)>())
     }
 
     /// Remove a value from the map.
     ///
     /// Returns `true` if a value was removed.
     pub fn remove<K: Assoc<V>, V: 'static>(&mut self) -> Option<V> {
-        self.data.remove(&TypeId::of::<K>()).map(|v| unsafe {
+        self.data.remove(&TypeId::of::<(K, V)>()).map(|v| unsafe {
             *v.downcast_unchecked::<V>()
         })
     }
 
     /// Get the given key's corresponding entry in the map for in-place manipulation.
     pub fn entry<'a, K: Assoc<V>, V: 'static>(&'a mut self) -> Entry<'a, K, V> {
-        match self.data.entry(TypeId::of::<K>()) {
+        match self.data.entry(TypeId::of::<(K, V)>()) {
             hash_map::Occupied(e) => Occupied(OccupiedEntry { data: e }),
             hash_map::Vacant(e) => Vacant(VacantEntry { data: e })
         }
@@ -228,6 +228,26 @@ mod test {
             _ => panic!("Found non-existant entry.")
         }
         assert!(map.contains::<Key, Value>());
+    }
+
+    #[test] fn test_entry_multi() {
+        impl Assoc<f64> for Key {}
+        impl Assoc<u32> for Key {}
+
+        let mut map = TypeMap::new();
+        map.insert::<Key, u32>(44);
+        map.insert::<Key, Value>(Value);
+        if let Occupied(_) = map.entry::<Key, f64>() {
+            panic!("Unsound")
+        }
+
+        assert_eq!(*map.get::<Key, Value>().unwrap(), Value);
+        map.remove::<Key, Value>();
+        assert!(!map.contains::<Key, Value>());
+
+        assert_eq!(*map.get::<Key, u32>().unwrap(), 44);
+        map.remove::<Key, u32>();
+        assert!(!map.contains::<Key, u32>());
     }
 }
 
