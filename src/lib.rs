@@ -3,7 +3,6 @@
 
 //! A type-based key value store where one value type is allowed for each key.
 
-extern crate alloc;
 extern crate "unsafe-any" as uany;
 
 use std::any::Any;
@@ -27,6 +26,10 @@ pub struct TypeMap {
 /// This trait defines the relationship between keys and values in a TypeMap.
 ///
 /// It is implemented for Keys, with a phantom type parameter for values.
+///
+/// Even though today's multidispatch rules allow it, this trait must not be
+/// implemented more than once by a single type. In the future, the phantom
+/// type parameter will move to an associated type.
 pub trait Assoc<Value: 'static>: 'static {}
 
 impl TypeMap {
