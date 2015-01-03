@@ -1,16 +1,12 @@
-#![deny(missing_docs)]
-#![deny(warnings)]
+#![deny(missing_docs, warnings)]
 
 //! A type-based key value store where one value type is allowed for each key.
 
 extern crate "unsafe-any" as uany;
 
-use std::any::Any;
+use uany::{UnsafeAny};
 use std::intrinsics::TypeId;
 use std::collections::{hash_map, HashMap};
-
-// These traits are faster when we know the type is correct already.
-use uany::{UncheckedAnyDowncast, UncheckedAnyMutDowncast, UncheckedBoxAnyDowncast};
 
 use Entry::{Occupied, Vacant};
 
@@ -18,9 +14,9 @@ use Entry::{Occupied, Vacant};
 ///
 /// Can contain one value of any type for each key type, as defined
 /// by the Assoc trait.
-#[deriving(Default)]
+#[derive(Default)]
 pub struct TypeMap {
-    data: HashMap<TypeId, Box<Any + 'static>>
+    data: HashMap<TypeId, Box<UnsafeAny + 'static>>
 }
 
 /// This trait defines the relationship between keys and values in a TypeMap.
@@ -42,7 +38,7 @@ impl TypeMap {
 
     /// Insert a value into the map with a specified key type.
     pub fn insert<K: Assoc<V>, V: 'static>(&mut self, val: V) -> Option<V> {
-        self.data.insert(TypeId::of::<(K, V)>(), box val as Box<Any>).map(|v| unsafe {
+        self.data.insert(TypeId::of::<(K, V)>(), box val as Box<UnsafeAny>).map(|v| unsafe {
             *v.downcast_unchecked::<V>()
         })
     }
@@ -100,10 +96,10 @@ impl TypeMap {
     }
 
     /// Read the underlying HashMap
-    pub unsafe fn data(&self) -> &HashMap<TypeId, Box<Any + 'static>> { &self.data }
+    pub unsafe fn data(&self) -> &HashMap<TypeId, Box<UnsafeAny + 'static>> { &self.data }
 
     /// Get a mutable reference to the underlying HashMap
-    pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<Any + 'static>> { &mut self.data }
+    pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<UnsafeAny + 'static>> { &mut self.data }
 
     /// Get the number of values stored in the map.
     pub fn len(&self) -> uint {
@@ -131,12 +127,12 @@ pub enum Entry<'a, K, V> {
 
 /// A view onto an occupied entry in a TypeMap.
 pub struct OccupiedEntry<'a, K, V> {
-    data: hash_map::OccupiedEntry<'a, TypeId, Box<Any + 'static>>
+    data: hash_map::OccupiedEntry<'a, TypeId, Box<UnsafeAny + 'static>>
 }
 
 /// A view onto an unoccupied entry in a TypeMap.
 pub struct VacantEntry<'a, K, V> {
-    data: hash_map::VacantEntry<'a, TypeId, Box<Any + 'static>>
+    data: hash_map::VacantEntry<'a, TypeId, Box<UnsafeAny + 'static>>
 }
 
 impl<'a, K, V: 'static> OccupiedEntry<'a, K, V> {
@@ -164,7 +160,7 @@ impl<'a, K, V: 'static> OccupiedEntry<'a, K, V> {
     /// Set the entry's value and return the previous value.
     pub fn set(&mut self, value: V) -> V {
         unsafe {
-            *self.data.set(box value as Box<Any + 'static>).downcast_unchecked::<V>()
+            *self.data.set(box value as Box<UnsafeAny + 'static>).downcast_unchecked::<V>()
         }
     }
 
@@ -180,7 +176,7 @@ impl<'a, K, V: 'static> VacantEntry<'a, K, V> {
     /// Set the entry's value and return a mutable reference to it.
     pub fn set(self, value: V) -> &'a mut V {
         unsafe {
-            self.data.set(box value as Box<Any + 'static>).downcast_mut_unchecked::<V>()
+            self.data.set(box value as Box<UnsafeAny + 'static>).downcast_mut_unchecked::<V>()
         }
     }
 }
@@ -190,10 +186,10 @@ mod test {
     use super::{TypeMap, Assoc};
     use super::Entry::{Occupied, Vacant};
 
-    #[deriving(Show, PartialEq)]
+    #[derive(Show, PartialEq)]
     struct Key;
 
-    #[deriving(Show, PartialEq)]
+    #[derive(Show, PartialEq)]
     struct Value;
 
     impl Assoc<Value> for Key {}
