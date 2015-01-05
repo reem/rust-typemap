@@ -184,70 +184,50 @@ impl<'a, K: Key> VacantEntry<'a, K> {
 
 #[cfg(test)]
 mod test {
-    use super::{TypeMap, Assoc};
+    use super::{TypeMap, Key};
     use super::Entry::{Occupied, Vacant};
 
     #[derive(Show, PartialEq)]
-    struct Key;
+    struct KeyType;
 
     #[derive(Show, PartialEq)]
-    struct Value;
+    struct Value(u8);
 
-    impl Assoc<Value> for Key {}
+    impl Key for KeyType { type Value = Value; }
 
     #[test] fn test_pairing() {
         let mut map = TypeMap::new();
-        map.insert::<Key, Value>(Value);
-        assert_eq!(*map.get::<Key, Value>().unwrap(), Value);
-        assert!(map.contains::<Key, Value>());
+        map.insert::<KeyType>(Value(100));
+        assert_eq!(*map.get::<KeyType>().unwrap(), Value(100));
+        assert!(map.contains::<KeyType>());
     }
 
     #[test] fn test_remove() {
         let mut map = TypeMap::new();
-        map.insert::<Key, Value>(Value);
-        assert!(map.contains::<Key, Value>());
-        map.remove::<Key, Value>();
-        assert!(!map.contains::<Key, Value>());
+        map.insert::<KeyType>(Value(10));
+        assert!(map.contains::<KeyType>());
+        map.remove::<KeyType>();
+        assert!(!map.contains::<KeyType>());
     }
 
     #[test] fn test_entry() {
         let mut map = TypeMap::new();
-        map.insert::<Key, Value>(Value);
-        match map.entry::<Key, Value>() {
+        map.insert::<KeyType>(Value(20));
+        match map.entry::<KeyType>() {
             Occupied(e) => {
-                assert_eq!(e.get(), &Value);
-                assert_eq!(e.take(), Value);
+                assert_eq!(e.get(), &Value(20));
+                assert_eq!(e.take(), Value(20));
             },
             _ => panic!("Unable to locate inserted item.")
         }
-        assert!(!map.contains::<Key, Value>());
-        match map.entry::<Key, Value>() {
+        assert!(!map.contains::<KeyType>());
+        match map.entry::<KeyType>() {
             Vacant(e) => {
-                e.set(Value);
+                e.set(Value(2));
             },
             _ => panic!("Found non-existant entry.")
         }
-        assert!(map.contains::<Key, Value>());
-    }
-
-    #[test] fn test_entry_multi() {
-        impl Assoc<f64> for Key {}
-        impl Assoc<u32> for Key {}
-
-        let mut map = TypeMap::new();
-        map.insert::<Key, u32>(44);
-        map.insert::<Key, Value>(Value);
-        if let Occupied(_) = map.entry::<Key, f64>() {
-            panic!("Unsound")
-        }
-
-        assert_eq!(*map.get::<Key, Value>().unwrap(), Value);
-        map.remove::<Key, Value>();
-        assert!(!map.contains::<Key, Value>());
-
-        assert_eq!(*map.get::<Key, u32>().unwrap(), 44);
-        map.remove::<Key, u32>();
-        assert!(!map.contains::<Key, u32>());
+        assert!(map.contains::<KeyType>());
     }
 }
 
