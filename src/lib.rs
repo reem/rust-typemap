@@ -6,7 +6,7 @@
 extern crate "unsafe-any" as uany;
 
 use uany::{UnsafeAny};
-use std::intrinsics::TypeId;
+use std::any::TypeId;
 use std::collections::{hash_map, HashMap};
 
 use Entry::{Occupied, Vacant};
