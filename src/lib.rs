@@ -1,4 +1,4 @@
-#![allow(unstable)]
+#![feature(std_misc, core)]
 #![deny(missing_docs, warnings)]
 
 //! A type-based key value store where one value type is allowed for each key.
@@ -8,6 +8,7 @@ extern crate "unsafe-any" as uany;
 use uany::{UnsafeAny};
 use std::any::TypeId;
 use std::collections::{hash_map, HashMap};
+use std::marker::PhantomData;
 
 use Entry::{Occupied, Vacant};
 
@@ -94,8 +95,8 @@ impl TypeMap {
     pub fn entry<'a, K: Key>(&'a mut self) -> Entry<'a, K>
     where <K as Key>::Value: 'static {
         match self.data.entry(TypeId::of::<K>()) {
-            hash_map::Entry::Occupied(e) => Occupied(OccupiedEntry { data: e }),
-            hash_map::Entry::Vacant(e) => Vacant(VacantEntry { data: e })
+            hash_map::Entry::Occupied(e) => Occupied(OccupiedEntry { data: e, _marker: PhantomData }),
+            hash_map::Entry::Vacant(e) => Vacant(VacantEntry { data: e, _marker: PhantomData })
         }
     }
 
@@ -135,12 +136,14 @@ pub enum Entry<'a, K> {
 
 /// A view onto an occupied entry in a TypeMap.
 pub struct OccupiedEntry<'a, K> {
-    data: hash_map::OccupiedEntry<'a, TypeId, Box<UnsafeAny + 'static>>
+    data: hash_map::OccupiedEntry<'a, TypeId, Box<UnsafeAny + 'static>>,
+    _marker: PhantomData<K>
 }
 
 /// A view onto an unoccupied entry in a TypeMap.
 pub struct VacantEntry<'a, K> {
-    data: hash_map::VacantEntry<'a, TypeId, Box<UnsafeAny + 'static>>
+    data: hash_map::VacantEntry<'a, TypeId, Box<UnsafeAny + 'static>>,
+    _marker: PhantomData<K>
 }
 
 impl<'a, K: Key> OccupiedEntry<'a, K> {
@@ -200,10 +203,10 @@ mod test {
     use super::{TypeMap, Key};
     use super::Entry::{Occupied, Vacant};
 
-    #[derive(Show, PartialEq)]
+    #[derive(Debug, PartialEq)]
     struct KeyType;
 
-    #[derive(Show, PartialEq)]
+    #[derive(Debug, PartialEq)]
     struct Value(u8);
 
     impl Key for KeyType { type Value = Value; }
@@ -229,14 +232,14 @@ mod test {
         match map.entry::<KeyType>() {
             Occupied(e) => {
                 assert_eq!(e.get(), &Value(20));
-                assert_eq!(e.take(), Value(20));
+                assert_eq!(e.remove(), Value(20));
             },
             _ => panic!("Unable to locate inserted item.")
         }
         assert!(!map.contains::<KeyType>());
         match map.entry::<KeyType>() {
             Vacant(e) => {
-                e.set(Value(2));
+                e.insert(Value(2));
             },
             _ => panic!("Found non-existant entry.")
         }
