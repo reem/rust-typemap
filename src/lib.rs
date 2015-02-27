@@ -25,7 +25,7 @@ pub struct TypeMap {
 ///
 /// It is implemented for Keys, with a phantom associated type for the values.
 pub trait Key: 'static {
-    /// Phantom associated type
+    /// The value type associated with this key type.
     type Value: 'static;
 }
 
