@@ -24,7 +24,10 @@ pub struct TypeMap {
 /// This trait defines the relationship between keys and values in a TypeMap.
 ///
 /// It is implemented for Keys, with a phantom associated type for the values.
-pub trait Key: 'static { type Value: 'static; }
+pub trait Key: 'static {
+    /// The value type associated with this key type.
+    type Value: 'static;
+}
 
 impl TypeMap {
     /// Create a new, empty TypeMap.
@@ -246,4 +249,3 @@ mod test {
         assert!(map.contains::<KeyType>());
     }
 }
-
