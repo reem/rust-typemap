@@ -1,9 +1,9 @@
-#![feature(std_misc, core)]
+#![feature(core)]
 #![deny(missing_docs, warnings)]
 
 //! A type-based key value store where one value type is allowed for each key.
 
-extern crate "unsafe-any" as uany;
+extern crate unsafe_any as uany;
 
 use uany::{UnsafeAny};
 use std::any::TypeId;
