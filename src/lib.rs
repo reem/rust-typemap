@@ -18,7 +18,7 @@ use Entry::{Occupied, Vacant};
 /// by the Assoc trait.
 #[derive(Default)]
 pub struct TypeMap {
-    data: HashMap<TypeId, Box<UnsafeAny + 'static>>
+    data: HashMap<TypeId, Box<UnsafeAny>>
 }
 
 /// This trait defines the relationship between keys and values in a TypeMap.
@@ -104,12 +104,12 @@ impl TypeMap {
     }
 
     /// Read the underlying HashMap
-    pub unsafe fn data(&self) -> &HashMap<TypeId, Box<UnsafeAny + 'static>> {
+    pub unsafe fn data(&self) -> &HashMap<TypeId, Box<UnsafeAny>> {
         &self.data
     }
 
     /// Get a mutable reference to the underlying HashMap
-    pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<UnsafeAny + 'static>> {
+    pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<UnsafeAny>> {
         &mut self.data
     }
 
@@ -139,13 +139,13 @@ pub enum Entry<'a, K> {
 
 /// A view onto an occupied entry in a TypeMap.
 pub struct OccupiedEntry<'a, K> {
-    data: hash_map::OccupiedEntry<'a, TypeId, Box<UnsafeAny + 'static>>,
+    data: hash_map::OccupiedEntry<'a, TypeId, Box<UnsafeAny>>,
     _marker: PhantomData<K>
 }
 
 /// A view onto an unoccupied entry in a TypeMap.
 pub struct VacantEntry<'a, K> {
-    data: hash_map::VacantEntry<'a, TypeId, Box<UnsafeAny + 'static>>,
+    data: hash_map::VacantEntry<'a, TypeId, Box<UnsafeAny>>,
     _marker: PhantomData<K>
 }
 
