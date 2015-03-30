@@ -6,7 +6,7 @@
 extern crate unsafe_any as uany;
 
 use uany::{UnsafeAny};
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::collections::{hash_map, HashMap};
 use std::marker::PhantomData;
 
@@ -24,9 +24,9 @@ pub struct TypeMap {
 /// This trait defines the relationship between keys and values in a TypeMap.
 ///
 /// It is implemented for Keys, with a phantom associated type for the values.
-pub trait Key: 'static {
+pub trait Key: Any {
     /// The value type associated with this key type.
-    type Value: 'static;
+    type Value: Any;
 }
 
 impl TypeMap {
@@ -39,7 +39,7 @@ impl TypeMap {
 
     /// Insert a value into the map with a specified key type.
     pub fn insert<K: Key>(&mut self, val: K::Value) -> Option<<K as Key>::Value>
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         self.data.insert(TypeId::of::<K>(), Box::new(val)).map(|v| unsafe {
             *v.downcast_unchecked::<<K as Key>::Value>()
         })
@@ -48,7 +48,7 @@ impl TypeMap {
     /// Find a value in the map and get a reference to it.
     #[deprecated = "renamed to `get`"]
     pub fn find<K: Key>(&self) -> Option<&<K as Key>::Value>
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
             v.downcast_ref_unchecked::<<K as Key>::Value>()
         })
@@ -57,7 +57,7 @@ impl TypeMap {
     /// Find a value in the map and get a mutable reference to it.
     #[deprecated = "renamed to `get_mut`"]
     pub fn find_mut<K: Key>(&mut self) -> Option<&mut <K as Key>::Value>
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         self.data.get_mut(&TypeId::of::<K>()).map(|v| unsafe {
             v.downcast_mut_unchecked::<<K as Key>::Value>()
         })
@@ -65,7 +65,7 @@ impl TypeMap {
 
     /// Find a value in the map and get a reference to it.
     pub fn get<K: Key>(&self) -> Option<&<K as Key>::Value>
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
             v.downcast_ref_unchecked::<<K as Key>::Value>()
         })
@@ -73,7 +73,7 @@ impl TypeMap {
 
     /// Find a value in the map and get a mutable reference to it.
     pub fn get_mut<K: Key>(&mut self) -> Option<&mut <K as Key>::Value>
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         self.data.get_mut(&TypeId::of::<K>()).map(|v| unsafe {
             v.downcast_mut_unchecked::<<K as Key>::Value>()
         })
@@ -88,7 +88,7 @@ impl TypeMap {
     ///
     /// Returns `true` if a value was removed.
     pub fn remove<K: Key>(&mut self) -> Option<<K as Key>::Value>
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         self.data.remove(&TypeId::of::<K>()).map(|v| unsafe {
             *v.downcast_unchecked::<<K as Key>::Value>()
         })
@@ -96,7 +96,7 @@ impl TypeMap {
 
     /// Get the given key's corresponding entry in the map for in-place manipulation.
     pub fn entry<'a, K: Key>(&'a mut self) -> Entry<'a, K>
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         match self.data.entry(TypeId::of::<K>()) {
             hash_map::Entry::Occupied(e) => Occupied(OccupiedEntry { data: e, _marker: PhantomData }),
             hash_map::Entry::Vacant(e) => Vacant(VacantEntry { data: e, _marker: PhantomData })
@@ -152,7 +152,7 @@ pub struct VacantEntry<'a, K> {
 impl<'a, K: Key> OccupiedEntry<'a, K> {
     /// Get a reference to the entry's value.
     pub fn get(&self) -> &<K as Key>::Value
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         unsafe {
             self.data.get().downcast_ref_unchecked()
         }
@@ -160,7 +160,7 @@ impl<'a, K: Key> OccupiedEntry<'a, K> {
 
     /// Get a mutable reference to the entry's value.
     pub fn get_mut(&mut self) -> &mut <K as Key>::Value
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         unsafe {
             self.data.get_mut().downcast_mut_unchecked()
         }
@@ -168,7 +168,7 @@ impl<'a, K: Key> OccupiedEntry<'a, K> {
 
     /// Transform the entry into a mutable reference with the same lifetime as the map.
     pub fn into_mut(self) -> &'a mut <K as Key>::Value
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         unsafe {
             self.data.into_mut().downcast_mut_unchecked()
         }
@@ -176,7 +176,7 @@ impl<'a, K: Key> OccupiedEntry<'a, K> {
 
     /// Set the entry's value and return the previous value.
     pub fn insert(&mut self, value: <K as Key>::Value) -> <K as Key>::Value
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         unsafe {
             *self.data.insert(Box::new(value)).downcast_unchecked()
         }
@@ -184,7 +184,7 @@ impl<'a, K: Key> OccupiedEntry<'a, K> {
 
     /// Move the entry's value out of the map, consuming the entry.
     pub fn remove(self) -> <K as Key>::Value
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         unsafe {
             *self.data.remove().downcast_unchecked()
         }
@@ -194,7 +194,7 @@ impl<'a, K: Key> OccupiedEntry<'a, K> {
 impl<'a, K: Key> VacantEntry<'a, K> {
     /// Set the entry's value and return a mutable reference to it.
     pub fn insert(self, value: <K as Key>::Value) -> &'a mut <K as Key>::Value
-    where <K as Key>::Value: 'static {
+    where <K as Key>::Value: Any {
         unsafe {
             self.data.insert(Box::new(value)).downcast_mut_unchecked()
         }
