@@ -1,4 +1,3 @@
-#![feature(core)]
 #![deny(missing_docs, warnings)]
 
 //! A type-based key value store where one value type is allowed for each key.
