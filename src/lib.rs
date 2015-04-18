@@ -26,6 +26,13 @@ where A: UnsafeAnyExt {
     data: HashMap<TypeId, Box<A>>
 }
 
+impl<A: ?Sized> Clone for TypeMap<A>
+where A: UnsafeAnyExt, Box<A>: Clone { // We are a bit cleverer than derive.
+    fn clone(&self) -> TypeMap<A> {
+        TypeMap { data: self.data.clone() }
+    }
+}
+
 /// A version of `TypeMap` containing only `Send` types.
 pub type SendMap = TypeMap<UnsafeAny + Send>;
 
@@ -35,15 +42,20 @@ pub type SyncMap = TypeMap<UnsafeAny + Sync>;
 /// A version of `TypeMap` containing only `Send + Sync` types.
 pub type ShareMap = TypeMap<UnsafeAny + Send + Sync>;
 
+/// A version of `TypeMap` containing only `Clone` types.
+pub type CloneMap = TypeMap<CloneAny>;
+
 // Assert some properties on SyncMap, SendMap and ShareMap.
 fn _assert_types() {
     fn _assert_send<T: Send>() { }
     fn _assert_sync<T: Sync>() { }
+    fn _assert_clone<T: Clone>() { }
 
     _assert_send::<SendMap>();
     _assert_sync::<SyncMap>();
     _assert_send::<ShareMap>();
     _assert_sync::<ShareMap>();
+    _assert_clone::<CloneMap>();
 }
 
 /// This trait defines the relationship between keys and values in a TypeMap.
@@ -135,6 +147,28 @@ impl TypeMap {
         self.data.clear()
     }
 }
+
+trait AnyObjectClone {
+    fn clone_into_box(&self) -> Box<CloneAny>;
+}
+
+impl<T: Any + Clone> AnyObjectClone for T {
+    fn clone_into_box(&self) -> Box<CloneAny> {
+        Box::new(self.clone())
+    }
+}
+
+trait CloneAny: AnyObjectClone {}
+
+impl<T: Any + Clone> CloneAny for T {}
+
+impl Clone for Box<CloneAny> {
+    fn clone(&self) -> Box<CloneAny> {
+        self.clone_into_box()
+    }
+}
+
+unsafe impl UnsafeAnyExt for CloneAny { }
 
 /// A view onto an entry in a TypeMap.
 pub enum Entry<'a, K> {
