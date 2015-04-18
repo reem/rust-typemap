@@ -45,24 +45,6 @@ impl TypeMap {
     }
 
     /// Find a value in the map and get a reference to it.
-    #[deprecated = "renamed to `get`"]
-    pub fn find<K: Key>(&self) -> Option<&<K as Key>::Value>
-    where <K as Key>::Value: Any {
-        self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
-            v.downcast_ref_unchecked::<<K as Key>::Value>()
-        })
-    }
-
-    /// Find a value in the map and get a mutable reference to it.
-    #[deprecated = "renamed to `get_mut`"]
-    pub fn find_mut<K: Key>(&mut self) -> Option<&mut <K as Key>::Value>
-    where <K as Key>::Value: Any {
-        self.data.get_mut(&TypeId::of::<K>()).map(|v| unsafe {
-            v.downcast_mut_unchecked::<<K as Key>::Value>()
-        })
-    }
-
-    /// Find a value in the map and get a reference to it.
     pub fn get<K: Key>(&self) -> Option<&<K as Key>::Value>
     where <K as Key>::Value: Any {
         self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
