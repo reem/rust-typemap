@@ -4,7 +4,7 @@
 
 extern crate unsafe_any as uany;
 
-use uany::{UnsafeAny};
+use uany::{UnsafeAny, UnsafeAnyExt};
 use std::any::{Any, TypeId};
 use std::collections::{hash_map, HashMap};
 use std::marker::PhantomData;
@@ -15,9 +15,35 @@ use Entry::{Occupied, Vacant};
 ///
 /// Can contain one value of any type for each key type, as defined
 /// by the Assoc trait.
+///
+/// You usually do not need to worry about the A type parameter, but it
+/// can be used to add bounds to the possible value types that can
+/// be stored in this map. Usually, you are looking for `ShareMap`, which
+/// is `Send + Sync`.
 #[derive(Default)]
-pub struct TypeMap {
-    data: HashMap<TypeId, Box<UnsafeAny>>
+pub struct TypeMap<A: ?Sized = UnsafeAny>
+where A: UnsafeAnyExt {
+    data: HashMap<TypeId, Box<A>>
+}
+
+/// A version of `TypeMap` containing only `Send` types.
+pub type SendMap = TypeMap<UnsafeAny + Send>;
+
+/// A version of `TypeMap` containing only `Sync` types.
+pub type SyncMap = TypeMap<UnsafeAny + Sync>;
+
+/// A version of `TypeMap` containing only `Send + Sync` types.
+pub type ShareMap = TypeMap<UnsafeAny + Send + Sync>;
+
+// Assert some properties on SyncMap, SendMap and ShareMap.
+fn _assert_types() {
+    fn _assert_send<T: Send>() { }
+    fn _assert_sync<T: Sync>() { }
+
+    _assert_send::<SendMap>();
+    _assert_sync::<SyncMap>();
+    _assert_send::<ShareMap>();
+    _assert_sync::<ShareMap>();
 }
 
 /// This trait defines the relationship between keys and values in a TypeMap.
