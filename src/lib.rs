@@ -11,6 +11,8 @@ use std::marker::PhantomData;
 
 use Entry::{Occupied, Vacant};
 
+use internals::{Implements, CloneAny};
+
 /// A map keyed by types.
 ///
 /// Can contain one value of any type for each key type, as defined
@@ -45,6 +47,9 @@ pub type ShareMap = TypeMap<UnsafeAny + Send + Sync>;
 /// A version of `TypeMap` containing only `Clone` types.
 pub type CloneMap = TypeMap<CloneAny>;
 
+/// A version of `TypeMap` containing only `Clone + Send + Sync` types.
+pub type ShareCloneMap = TypeMap<CloneAny + Send + Sync>;
+
 // Assert some properties on SyncMap, SendMap and ShareMap.
 fn _assert_types() {
     fn _assert_send<T: Send>() { }
@@ -69,32 +74,42 @@ pub trait Key: Any {
 impl TypeMap {
     /// Create a new, empty TypeMap.
     pub fn new() -> TypeMap {
+        TypeMap::custom()
+    }
+}
+
+impl<A: UnsafeAnyExt + ?Sized> TypeMap<A> {
+    /// Create a new, empty TypeMap.
+    ///
+    /// Can be used with any `A` parameter; `new` is specialized to get around
+    /// the required type annotations when using this function.
+    pub fn custom() -> TypeMap<A> {
         TypeMap {
             data: HashMap::new()
         }
     }
 
     /// Insert a value into the map with a specified key type.
-    pub fn insert<K: Key>(&mut self, val: K::Value) -> Option<<K as Key>::Value>
-    where <K as Key>::Value: Any {
-        self.data.insert(TypeId::of::<K>(), Box::new(val)).map(|v| unsafe {
-            *v.downcast_unchecked::<<K as Key>::Value>()
+    pub fn insert<K: Key>(&mut self, val: K::Value) -> Option<K::Value>
+    where K::Value: Any + Implements<A> {
+        self.data.insert(TypeId::of::<K>(), val.into_object()).map(|v| unsafe {
+            *v.downcast_unchecked::<K::Value>()
         })
     }
 
     /// Find a value in the map and get a reference to it.
-    pub fn get<K: Key>(&self) -> Option<&<K as Key>::Value>
-    where <K as Key>::Value: Any {
+    pub fn get<K: Key>(&self) -> Option<&K::Value>
+    where K::Value: Any + Implements<A> {
         self.data.get(&TypeId::of::<K>()).map(|v| unsafe {
-            v.downcast_ref_unchecked::<<K as Key>::Value>()
+            v.downcast_ref_unchecked::<K::Value>()
         })
     }
 
     /// Find a value in the map and get a mutable reference to it.
-    pub fn get_mut<K: Key>(&mut self) -> Option<&mut <K as Key>::Value>
-    where <K as Key>::Value: Any {
+    pub fn get_mut<K: Key>(&mut self) -> Option<&mut K::Value>
+    where K::Value: Any + Implements<A> {
         self.data.get_mut(&TypeId::of::<K>()).map(|v| unsafe {
-            v.downcast_mut_unchecked::<<K as Key>::Value>()
+            v.downcast_mut_unchecked::<K::Value>()
         })
     }
 
@@ -106,16 +121,16 @@ impl TypeMap {
     /// Remove a value from the map.
     ///
     /// Returns `true` if a value was removed.
-    pub fn remove<K: Key>(&mut self) -> Option<<K as Key>::Value>
-    where <K as Key>::Value: Any {
+    pub fn remove<K: Key>(&mut self) -> Option<K::Value>
+    where K::Value: Any + Implements<A> {
         self.data.remove(&TypeId::of::<K>()).map(|v| unsafe {
-            *v.downcast_unchecked::<<K as Key>::Value>()
+            *v.downcast_unchecked::<K::Value>()
         })
     }
 
     /// Get the given key's corresponding entry in the map for in-place manipulation.
-    pub fn entry<'a, K: Key>(&'a mut self) -> Entry<'a, K>
-    where <K as Key>::Value: Any {
+    pub fn entry<'a, K: Key>(&'a mut self) -> Entry<'a, K, A>
+    where K::Value: Any + Implements<A> {
         match self.data.entry(TypeId::of::<K>()) {
             hash_map::Entry::Occupied(e) => Occupied(OccupiedEntry { data: e, _marker: PhantomData }),
             hash_map::Entry::Vacant(e) => Vacant(VacantEntry { data: e, _marker: PhantomData })
@@ -123,12 +138,12 @@ impl TypeMap {
     }
 
     /// Read the underlying HashMap
-    pub unsafe fn data(&self) -> &HashMap<TypeId, Box<UnsafeAny>> {
+    pub unsafe fn data(&self) -> &HashMap<TypeId, Box<A>> {
         &self.data
     }
 
     /// Get a mutable reference to the underlying HashMap
-    pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<UnsafeAny>> {
+    pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<A>> {
         &mut self.data
     }
 
@@ -148,103 +163,83 @@ impl TypeMap {
     }
 }
 
-trait AnyObjectClone {
-    fn clone_into_box(&self) -> Box<CloneAny>;
-}
-
-impl<T: Any + Clone> AnyObjectClone for T {
-    fn clone_into_box(&self) -> Box<CloneAny> {
-        Box::new(self.clone())
-    }
-}
-
-trait CloneAny: AnyObjectClone {}
-
-impl<T: Any + Clone> CloneAny for T {}
-
-impl Clone for Box<CloneAny> {
-    fn clone(&self) -> Box<CloneAny> {
-        self.clone_into_box()
-    }
-}
-
-unsafe impl UnsafeAnyExt for CloneAny { }
-
 /// A view onto an entry in a TypeMap.
-pub enum Entry<'a, K> {
+pub enum Entry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
     /// A view onto an occupied entry in a TypeMap.
-    Occupied(OccupiedEntry<'a, K>),
+    Occupied(OccupiedEntry<'a, K, A>),
     /// A view onto an unoccupied entry in a TypeMap.
-    Vacant(VacantEntry<'a, K>)
+    Vacant(VacantEntry<'a, K, A>)
 }
 
 /// A view onto an occupied entry in a TypeMap.
-pub struct OccupiedEntry<'a, K> {
-    data: hash_map::OccupiedEntry<'a, TypeId, Box<UnsafeAny>>,
+pub struct OccupiedEntry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
+    data: hash_map::OccupiedEntry<'a, TypeId, Box<A>>,
     _marker: PhantomData<K>
 }
 
 /// A view onto an unoccupied entry in a TypeMap.
-pub struct VacantEntry<'a, K> {
-    data: hash_map::VacantEntry<'a, TypeId, Box<UnsafeAny>>,
+pub struct VacantEntry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
+    data: hash_map::VacantEntry<'a, TypeId, Box<A>>,
     _marker: PhantomData<K>
 }
 
-impl<'a, K: Key> OccupiedEntry<'a, K> {
+impl<'a, K: Key, A: UnsafeAnyExt + ?Sized> OccupiedEntry<'a, K, A> {
     /// Get a reference to the entry's value.
-    pub fn get(&self) -> &<K as Key>::Value
-    where <K as Key>::Value: Any {
+    pub fn get(&self) -> &K::Value
+    where K::Value: Any + Implements<A> {
         unsafe {
             self.data.get().downcast_ref_unchecked()
         }
     }
 
     /// Get a mutable reference to the entry's value.
-    pub fn get_mut(&mut self) -> &mut <K as Key>::Value
-    where <K as Key>::Value: Any {
+    pub fn get_mut(&mut self) -> &mut K::Value
+    where K::Value: Any + Implements<A> {
         unsafe {
             self.data.get_mut().downcast_mut_unchecked()
         }
     }
 
     /// Transform the entry into a mutable reference with the same lifetime as the map.
-    pub fn into_mut(self) -> &'a mut <K as Key>::Value
-    where <K as Key>::Value: Any {
+    pub fn into_mut(self) -> &'a mut K::Value
+    where K::Value: Any + Implements<A> {
         unsafe {
             self.data.into_mut().downcast_mut_unchecked()
         }
     }
 
     /// Set the entry's value and return the previous value.
-    pub fn insert(&mut self, value: <K as Key>::Value) -> <K as Key>::Value
-    where <K as Key>::Value: Any {
+    pub fn insert(&mut self, value: K::Value) -> K::Value
+    where K::Value: Any + Implements<A> {
         unsafe {
-            *self.data.insert(Box::new(value)).downcast_unchecked()
+            *self.data.insert(value.into_object()).downcast_unchecked()
         }
     }
 
     /// Move the entry's value out of the map, consuming the entry.
-    pub fn remove(self) -> <K as Key>::Value
-    where <K as Key>::Value: Any {
+    pub fn remove(self) -> K::Value
+    where K::Value: Any + Implements<A> {
         unsafe {
             *self.data.remove().downcast_unchecked()
         }
     }
 }
 
-impl<'a, K: Key> VacantEntry<'a, K> {
+impl<'a, K: Key, A: ?Sized + UnsafeAnyExt> VacantEntry<'a, K, A> {
     /// Set the entry's value and return a mutable reference to it.
-    pub fn insert(self, value: <K as Key>::Value) -> &'a mut <K as Key>::Value
-    where <K as Key>::Value: Any {
+    pub fn insert(self, value: K::Value) -> &'a mut K::Value
+    where K::Value: Any + Implements<A> {
         unsafe {
-            self.data.insert(Box::new(value)).downcast_mut_unchecked()
+            self.data.insert(value.into_object()).downcast_mut_unchecked()
         }
     }
 }
 
+mod internals;
+
 #[cfg(test)]
 mod test {
-    use super::{TypeMap, Key};
+    use super::{TypeMap, SendMap, Key};
     use super::Entry::{Occupied, Vacant};
 
     #[derive(Debug, PartialEq)]
@@ -288,5 +283,13 @@ mod test {
             _ => panic!("Found non-existant entry.")
         }
         assert!(map.contains::<KeyType>());
+    }
+
+    #[test] fn test_custom_bounds() {
+        let mut map: SendMap = TypeMap::custom();
+        map.insert::<KeyType>(Value(10));
+        assert!(map.contains::<KeyType>());
+        map.remove::<KeyType>();
+        assert!(!map.contains::<KeyType>());
     }
 }
