@@ -26,9 +26,13 @@ unsafe impl UnsafeAnyExt for DebugAny + Send + Sync {}
 ///
 /// There is also an exported alias for this type of `TypeMap`, `CloneAny`.
 pub trait CloneAny: Any {
+    #[doc(hidden)]
     fn clone_any(&self) -> Box<CloneAny>;
+    #[doc(hidden)]
     fn clone_any_send(&self) -> Box<CloneAny + Send> where Self: Send;
+    #[doc(hidden)]
     fn clone_any_sync(&self) -> Box<CloneAny + Sync> where Self: Sync;
+    #[doc(hidden)]
     fn clone_any_send_sync(&self) -> Box<CloneAny + Send + Sync> where Self: Send + Sync;
 }
 
