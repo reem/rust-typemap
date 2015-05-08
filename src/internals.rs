@@ -2,7 +2,14 @@ use uany::{UnsafeAny, UnsafeAnyExt};
 use std::any::Any;
 use std::fmt::Debug;
 
-#[doc(hidden)]
+/// A marker trait meant for use as the `A` parameter in `TypeMap`.
+///
+/// This can be used to construct `TypeMap`s containing only types which
+/// implement `Debug` like so: `TypeMap::<DebugAny>::custom()`, which produces
+/// a `TypeMap<DebugAny>`. Combine `DebugAny` with `Send` or `Sync` to add
+/// additional bounds.
+///
+/// There is also an exported alias for this type of `TypeMap`, `DebugMap`.
 pub trait DebugAny: Any + Debug { }
 
 unsafe impl UnsafeAnyExt for DebugAny {}
@@ -10,7 +17,14 @@ unsafe impl UnsafeAnyExt for DebugAny + Send {}
 unsafe impl UnsafeAnyExt for DebugAny + Sync {}
 unsafe impl UnsafeAnyExt for DebugAny + Send + Sync {}
 
-#[doc(hidden)] // Not actually exported
+/// A marker trait meant for use as the `A` parameter in `TypeMap`.
+///
+/// This can be used to construct `TypeMap`s containing only types which
+/// implement `Clone` like so: `TypeMap::<CloneAny>::custom()`, which produces
+/// a `TypeMap<CloneAny>`. Combine `CloneAny` with `Send` or `Sync` to add
+/// additional bounds.
+///
+/// There is also an exported alias for this type of `TypeMap`, `CloneAny`.
 pub trait CloneAny: Any {
     fn clone_any(&self) -> Box<CloneAny>;
     fn clone_any_send(&self) -> Box<CloneAny + Send> where Self: Send;
