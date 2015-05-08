@@ -11,7 +11,7 @@ use std::marker::PhantomData;
 
 use Entry::{Occupied, Vacant};
 
-use internals::{Implements, CloneAny};
+use internals::{Implements, CloneAny, DebugAny};
 
 /// A map keyed by types.
 ///
@@ -22,7 +22,7 @@ use internals::{Implements, CloneAny};
 /// can be used to add bounds to the possible value types that can
 /// be stored in this map. Usually, you are looking for `ShareMap`, which
 /// is `Send + Sync`.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TypeMap<A: ?Sized = UnsafeAny>
 where A: UnsafeAnyExt {
     data: HashMap<TypeId, Box<A>>
@@ -50,17 +50,27 @@ pub type CloneMap = TypeMap<CloneAny>;
 /// A version of `TypeMap` containing only `Clone + Send + Sync` types.
 pub type ShareCloneMap = TypeMap<CloneAny + Send + Sync>;
 
+/// A version of `TypeMap` containing only `Debug` types.
+pub type DebugMap = TypeMap<DebugAny>;
+
+/// A version of `TypeMap` containing only `Debug + Send + Sync` types.
+pub type ShareDebugMap = TypeMap<DebugAny + Send + Sync>;
+
 // Assert some properties on SyncMap, SendMap and ShareMap.
 fn _assert_types() {
+    use std::fmt::Debug;
+
     fn _assert_send<T: Send>() { }
     fn _assert_sync<T: Sync>() { }
     fn _assert_clone<T: Clone>() { }
+    fn _assert_debug<T: Debug>() { }
 
     _assert_send::<SendMap>();
     _assert_sync::<SyncMap>();
     _assert_send::<ShareMap>();
     _assert_sync::<ShareMap>();
     _assert_clone::<CloneMap>();
+    _assert_debug::<DebugMap>();
 }
 
 /// This trait defines the relationship between keys and values in a TypeMap.
