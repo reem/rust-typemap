@@ -250,13 +250,13 @@ mod internals;
 
 #[cfg(test)]
 mod test {
-    use super::{TypeMap, SendMap, Key};
+    use super::{TypeMap, CloneMap, SendMap, Key};
     use super::Entry::{Occupied, Vacant};
 
     #[derive(Debug, PartialEq)]
     struct KeyType;
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Clone, Debug, PartialEq)]
     struct Value(u8);
 
     impl Key for KeyType { type Value = Value; }
@@ -302,5 +302,13 @@ mod test {
         assert!(map.contains::<KeyType>());
         map.remove::<KeyType>();
         assert!(!map.contains::<KeyType>());
+    }
+
+    #[test] fn test_clonemap() {
+        let mut map: CloneMap = TypeMap::custom();
+        map.insert::<KeyType>(Value(10));
+        assert!(map.contains::<KeyType>());
+        let cloned = map.clone();
+        assert_eq!(map.get::<KeyType>(), cloned.get::<KeyType>());
     }
 }

@@ -54,19 +54,19 @@ impl<T: Any + Clone> CloneAny for T {
 }
 
 impl Clone for Box<CloneAny> {
-    fn clone(&self) -> Box<CloneAny> { self.clone_any() }
+    fn clone(&self) -> Box<CloneAny> { (**self).clone_any() }
 }
 
 impl Clone for Box<CloneAny + Send> {
-    fn clone(&self) -> Box<CloneAny + Send> { self.clone_any_send() }
+    fn clone(&self) -> Box<CloneAny + Send> { (**self).clone_any_send() }
 }
 
 impl Clone for Box<CloneAny + Sync> {
-    fn clone(&self) -> Box<CloneAny + Sync> { self.clone_any_sync() }
+    fn clone(&self) -> Box<CloneAny + Sync> { (**self).clone_any_sync() }
 }
 
 impl Clone for Box<CloneAny + Send + Sync> {
-    fn clone(&self) -> Box<CloneAny + Send + Sync> { self.clone_any_send_sync() }
+    fn clone(&self) -> Box<CloneAny + Send + Sync> { (**self).clone_any_send_sync() }
 }
 
 unsafe impl UnsafeAnyExt for CloneAny {}
