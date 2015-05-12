@@ -182,6 +182,28 @@ pub enum Entry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
     Vacant(VacantEntry<'a, K, A>)
 }
 
+impl<'a, K: Key, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> Entry<'a, K, A> {
+    /// Ensures a value is in the entry by inserting the default if empty, and returns
+    /// a mutable reference to the value in the entry.
+    pub fn or_insert(self, default: K::Value) -> &'a mut K::Value
+    where K::Value: Any + Implements<A> {
+        match self {
+            Entry::Occupied(inner) => inner.into_mut(),
+            Entry::Vacant(inner) => inner.insert(default),
+        }
+    }
+
+    /// Ensures a value is in the entry by inserting the result of the default function if empty,
+    /// and returns a mutable reference to the value in the entry.
+    pub fn or_insert_with<F: FnOnce() -> K::Value>(self, default: F) -> &'a mut K::Value
+    where K::Value: Any + Implements<A> {
+        match self {
+            Entry::Occupied(inner) => inner.into_mut(),
+            Entry::Vacant(inner) => inner.insert(default()),
+        }
+    }
+}
+
 /// A view onto an occupied entry in a TypeMap.
 pub struct OccupiedEntry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
     data: hash_map::OccupiedEntry<'a, TypeId, Box<A>>,
@@ -294,6 +316,16 @@ mod test {
             _ => panic!("Found non-existant entry.")
         }
         assert!(map.contains::<KeyType>());
+    }
+
+    #[test] fn test_entry_or_insert() {
+        let mut map = TypeMap::new();
+        map.entry::<KeyType>().or_insert(Value(20)).0 += 1;
+        assert_eq!(map.get::<KeyType>().unwrap(), &Value(21));
+
+        // on existing value
+        map.entry::<KeyType>().or_insert(Value(100)).0 += 1;
+        assert_eq!(map.get::<KeyType>().unwrap(), &Value(22));
     }
 
     #[test] fn test_custom_bounds() {
