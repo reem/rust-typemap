@@ -11,6 +11,7 @@ use std::fmt::Debug;
 ///
 /// There is also an exported alias for this type of `TypeMap`, `DebugMap`.
 pub trait DebugAny: Any + Debug { }
+impl<T: Any + Debug> DebugAny for T { }
 
 unsafe impl UnsafeAnyExt for DebugAny {}
 unsafe impl UnsafeAnyExt for DebugAny + Send {}

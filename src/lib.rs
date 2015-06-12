@@ -272,7 +272,7 @@ mod internals;
 
 #[cfg(test)]
 mod test {
-    use super::{TypeMap, CloneMap, SendMap, Key};
+    use super::{TypeMap, CloneMap, DebugMap, SendMap, Key};
     use super::Entry::{Occupied, Vacant};
 
     #[derive(Debug, PartialEq)]
@@ -342,5 +342,11 @@ mod test {
         assert!(map.contains::<KeyType>());
         let cloned = map.clone();
         assert_eq!(map.get::<KeyType>(), cloned.get::<KeyType>());
+    }
+
+    #[test] fn test_debugmap() {
+        let mut map: DebugMap = TypeMap::custom();
+        map.insert::<KeyType>(Value(10));
+        assert!(map.contains::<KeyType>());
     }
 }
