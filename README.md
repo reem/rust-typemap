@@ -13,18 +13,20 @@ of `TypeMap`.
 ## Example
 
 ```rust
-#[deriving(Show, PartialEq)]
+extern crate typemap;
+use typemap::{TypeMap, Key};
+
 struct KeyType;
 
-#[deriving(Show, PartialEq)]
+#[derive(Debug, PartialEq)]
 struct Value(i32);
 
 impl Key for KeyType { type Value = Value; }
 
 #[test] fn test_pairing() {
     let mut map = TypeMap::new();
-    map.insert::<KeyType>(Value(12));
-    assert_eq!(*map.find::<KeyType>().unwrap(), Value(12);
+    map.insert::<KeyType>(Value(42));
+    assert_eq!(*map.get::<KeyType>().unwrap(), Value(42));
 }
 ```
 
