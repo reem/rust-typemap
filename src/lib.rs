@@ -182,7 +182,7 @@ pub enum Entry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
     Vacant(VacantEntry<'a, K, A>)
 }
 
-impl<'a, K: Key, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> Entry<'a, K, A> {
+impl<'a, K: Key, A: ?Sized + UnsafeAnyExt + 'a> Entry<'a, K, A> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
     pub fn or_insert(self, default: K::Value) -> &'a mut K::Value
