@@ -74,7 +74,7 @@ fn _assert_types() {
     _assert_debug::<DebugMap>();
 }
 
-/// This trait defines the relationship between keys and values in a TypeMap.
+/// This trait defines the relationship between keys and values in a `TypeMap`.
 ///
 /// It is implemented for Keys, with a phantom associated type for the values.
 pub trait Key: Any {
@@ -140,7 +140,7 @@ impl<A: UnsafeAnyExt + ?Sized> TypeMap<A> {
     }
 
     /// Get the given key's corresponding entry in the map for in-place manipulation.
-    pub fn entry<'a, K: Key>(&'a mut self) -> Entry<'a, K, A>
+    pub fn entry<K: Key>(&mut self) -> Entry<K, A>
     where K::Value: Any + Implements<A> {
         match self.data.entry(TypeId::of::<K>()) {
             hash_map::Entry::Occupied(e) => Occupied(OccupiedEntry { data: e, _marker: PhantomData }),
@@ -174,7 +174,7 @@ impl<A: UnsafeAnyExt + ?Sized> TypeMap<A> {
     }
 }
 
-/// A view onto an entry in a TypeMap.
+/// A view onto an entry in a `TypeMap`.
 pub enum Entry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
     /// A view onto an occupied entry in a TypeMap.
     Occupied(OccupiedEntry<'a, K, A>),
@@ -204,13 +204,13 @@ impl<'a, K: Key, A: ?Sized + UnsafeAnyExt + 'a> Entry<'a, K, A> {
     }
 }
 
-/// A view onto an occupied entry in a TypeMap.
+/// A view onto an occupied entry in a `TypeMap`.
 pub struct OccupiedEntry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
     data: hash_map::OccupiedEntry<'a, TypeId, Box<A>>,
     _marker: PhantomData<K>
 }
 
-/// A view onto an unoccupied entry in a TypeMap.
+/// A view onto an unoccupied entry in a `TypeMap`.
 pub struct VacantEntry<'a, K, A: ?Sized + UnsafeAnyExt + 'a = UnsafeAny> {
     data: hash_map::VacantEntry<'a, TypeId, Box<A>>,
     _marker: PhantomData<K>
